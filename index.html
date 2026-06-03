@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>法域智和数据情况总览</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    padding: 12px;
+    min-height: 100vh;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .page-wrapper {
+    max-width: 1300px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1a3c6e 0%, #2d6bb0 100%);
+    color: white;
+    padding: 24px 20px;
+    text-align: center;
+  }
+  .header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin: 0 auto;
+    max-width: 800px;
+  }
+  .header .subtitle {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 6px;
+  }
+
+  .content { padding: 20px 16px; }
+
+  /* 汇总卡片 */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .card {
+    border-radius: 8px;
+    padding: 14px 8px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .card-blue   { background: #EBF3FF; }
+  .card-blue::before   { background: #4472C4; }
+  .card-orange { background: #FFF4EC; }
+  .card-orange::before { background: #ED7D31; }
+  .card-green  { background: #EDFFF4; }
+  .card-green::before  { background: #70AD47; }
+  .card-teal   { background: #E8FBF5; }
+  .card-teal::before   { background: #26A65B; }
+  .card-gold   { background: #FFFBEC; }
+  .card-gold::before   { background: #FFC000; }
+  .card-purple { background: #F3EEFF; }
+  .card-purple::before { background: #7B68EE; }
+
+  .card .label  { font-size: 11px; color: #666; margin-bottom: 6px; line-height: 1.4; }
+  .card .value  { font-size: 22px; font-weight: 800; letter-spacing: -1px; }
+  .card .unit   { font-size: 11px; color: #999; margin-top: 2px; }
+  .card-blue   .value { color: #4472C4; }
+  .card-orange .value { color: #ED7D31; }
+  .card-green  .value { color: #70AD47; }
+  .card-teal   .value { color: #1E8E5E; }
+  .card-gold   .value { color: #C08000; }
+  .card-purple .value { color: #6B5FD4; }
+
+  /* 图表区域 */
+  .chart-section {
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a3c6e;
+    margin-bottom: 10px;
+    padding-left: 4px;
+    border-left: 3px solid #2d6bb0;
+    padding: 2px 0 2px 10px;
+  }
+  .chart-box {
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 8px;
+    padding: 12px 8px;
+  }
+  .chart-container {
+    position: relative;
+    width: 100%;
+    height: 420px;
+  }
+
+  /* 表格 */
+  .table-section { margin-bottom: 20px; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 640px;
+  }
+  thead th {
+    background: #f5f7fa;
+    color: #444;
+    font-weight: 600;
+    padding: 10px 6px;
+    border-bottom: 2px solid #e0e4ea;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+  tbody td {
+    padding: 8px 6px;
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: nowrap;
+  }
+  tbody td:first-child {
+    text-align: left;
+    padding-left: 12px;
+  }
+  tfoot td {
+    font-weight: 700;
+    padding: 10px 6px;
+    text-align: center;
+    background: #fafbfc;
+    border-top: 2px solid #e0e4ea;
+    white-space: nowrap;
+  }
+  tfoot td:first-child { text-align: left; padding-left: 12px; color: #1a3c6e; }
+
+  .td-zero  { color: #bbb; }
+  .td-high  { color: #e74c3c; font-weight: 700; }
+
+  /* 底部 */
+  .download-bar {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e8ecf1;
+  }
+  .btn {
+    padding: 10px 22px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn-primary { background: #1a3c6e; color: white; }
+  .btn-primary:hover { background: #2d6bb0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,60,110,0.3); }
+  .btn-secondary { background: #fff; color: #1a3c6e; border: 2px solid #1a3c6e; }
+  .btn-secondary:hover { background: #EBF3FF; }
+
+  .note {
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+
+  /* ==================== 响应式 ==================== */
+
+  /* 平板 */
+  @media (max-width: 1024px) {
+    .summary-cards {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .card { padding: 12px 6px; }
+    .card .value { font-size: 20px; }
+    .card .label { font-size: 10px; }
+    .chart-container { height: 360px; }
+    .header h1 { font-size: 18px; }
+  }
+
+  /* 手机 */
+  @media (max-width: 640px) {
+    body { padding: 6px; }
+    .page-wrapper { border-radius: 8px; }
+    .header {
+      padding: 18px 12px;
+    }
+    .header h1 { font-size: 16px; letter-spacing: 0; }
+    .header .subtitle { font-size: 11px; }
+
+    .content { padding: 12px 10px; }
+
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+    .card {
+      padding: 10px 4px;
+      border-radius: 6px;
+    }
+    .card::before { height: 2px; }
+    .card .label { font-size: 10px; }
+    .card .value { font-size: 18px; }
+    .card .unit  { font-size: 10px; }
+
+    .chart-container { height: 280px; }
+    .chart-box { padding: 8px 4px; }
+    .section-title { font-size: 14px; }
+
+    table { font-size: 10px; min-width: 520px; }
+    thead th { padding: 6px 3px; font-size: 10px; }
+    tbody td { padding: 5px 3px; }
+    tbody td:first-child { padding-left: 6px; }
+    tfoot td:first-child { padding-left: 6px; }
+
+    .btn { padding: 8px 14px; font-size: 12px; }
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .page-wrapper { box-shadow: none; }
+    .download-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+  <div class="header">
+    <h1>法域智和数据情况总览</h1>
+    <div class="subtitle">统计口径：以 .docx 文档为单位（一份即一个 docx 文档）&nbsp;|&nbsp; 数据区间：2025年3月 — 2026年6月</div>
+  </div>
+
+  <div class="content">
+
+    <!-- 汇总卡片 -->
+    <div class="summary-cards">
+      <div class="card card-blue">
+        <div class="label">法律法规<br>（4GB）</div>
+        <div class="value" id="sum-c">—</div>
+        <div class="unit">份</div>
+      </div>
+      <div class="card card-orange">
+        <div class="label">裁判文书<br>（11GB）</div>
+        <div class="value" id="sum-d">—</div>
+        <div class="unit">份</div>
+      </div>
+      <div class="card card-purple">
+        <div class="label">法律书籍<br>（共375.5MB）</div>
+        <div class="value" id="sum-e">—</div>
+        <div class="unit">份</div>
+      </div>
+      <div class="card card-teal">
+        <div class="label">合同模板<br>（共204MB）</div>
+        <div class="value" id="sum-f">—</div>
+        <div class="unit">份</div>
+      </div>
+      <div class="card card-gold">
+        <div class="label">起诉状和答辩状<br>（共12.4MB）</div>
+        <div class="value" id="sum-g">—</div>
+        <div class="unit">份</div>
+      </div>
+      <div class="card card-green">
+        <div class="label">政务数据<br>（共622MB）</div>
+        <div class="value" id="sum-h">—</div>
+        <div class="unit">份</div>
+      </div>
+    </div>
+
+    <!-- 折线图 -->
+    <div class="chart-section">
+      <div class="section-title">各月份数据采集趋势</div>
+      <div class="chart-box">
+        <div class="chart-container">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 堆积柱状图 -->
+    <div class="chart-section">
+      <div class="section-title">各月数据类型分布（堆积柱状图）</div>
+      <div class="chart-box">
+        <div class="chart-container">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数据明细表 -->
+    <div class="table-section">
+      <div class="section-title">月份数据采集明细</div>
+      <div class="chart-box" style="padding:0;overflow:hidden;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left;padding-left:12px;">月份</th>
+                <th>法律法规<br>（4GB）</th>
+                <th>裁判文书<br>（11GB）</th>
+                <th>法律书籍<br>（共375.5MB）</th>
+                <th>合同模板<br>（共204MB）</th>
+                <th>起诉状和答辩状<br>（共12.4MB）</th>
+                <th>政务数据<br>（共622MB）</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+            <tfoot>
+              <tr id="footRow">
+                <td>合计</td>
+                <td id="ft-c">—</td>
+                <td id="ft-d">—</td>
+                <td id="ft-e">—</td>
+                <td id="ft-f">—</td>
+                <td id="ft-g">—</td>
+                <td id="ft-h">—</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="download-bar">
+      <button class="btn btn-secondary" onclick="window.print()">🖨 打印 / 保存PDF</button>
+      <button class="btn btn-primary" onclick="downloadHTML()">⬇ 下载本报告 (HTML)</button>
+    </div>
+    <div class="note">数据来源：法域智和（长沙）科技有限公司算法与数据安全部</div>
+  </div>
+</div>
+
+<script>
+// =============================================
+// 严格按照新Excel原始数据
+// 新列序: C=法律法规（4GB）, D=裁判文书（11GB）, E=法律书籍（共375.5MB）,
+//         F=合同模板（共204MB）, G=起诉状和答辩状（共12.4MB）, H=政务数据（共622MB）
+// 统计单位：份
+// =============================================
+
+const rawData = [
+  { month: '2025年3月',  c: 1141,  d: 1572,   e: 0,     f: 15,   g: 7,   h: 0   },
+  { month: '2025年4月',  c: 1141,  d: 1572,   e: 0,     f: 15,   g: 7,   h: 0   },
+  { month: '2025年5月',  c: 1141,  d: 1572,   e: 0,     f: 15,   g: 7,   h: 0   },
+  { month: '2025年6月',  c: 1141,  d: 1572,   e: 0,     f: 115,  g: 7,   h: 0   },
+  { month: '2025年7月',  c: 1141,  d: 1572,   e: 0,     f: 15,   g: 7,   h: 0   },
+  { month: '2025年8月',  c: 1141,  d: 1572,   e: 0,     f: 15,   g: 7,   h: 0   },
+  { month: '2025年9月',  c: 1141,  d: 1572,   e: 0,     f: 15,   g: 7,   h: 0   },
+  { month: '2025年10月', c: 19786, d: 0,      e: 52,    f: 5000, g: 175, h: 0   },
+  { month: '2025年11月', c: 0,     d: 108436, e: 100,   f: 0,    g: 0,   h: 0   },
+  { month: '2025年12月', c: 0,     d: 294958, e: 100,   f: 0,    g: 0,   h: 0   },
+  { month: '2026年1月',  c: 0,     d: 252757, e: 0,     f: 0,    g: 0,   h: 0   },
+  { month: '2026年2月',  c: 0,     d: 265347, e: 0,     f: 0,    g: 0,   h: 0   },
+  { month: '2026年3月',  c: 0,     d: 0,      e: 0,     f: 0,    g: 0,   h: 0   },
+  { month: '2026年4月',  c: 430000,d: 0,      e: 0,     f: 0,    g: 0,   h: 300 },
+  { month: '2026年5月',  c: 180000,d: 250000, e: 0,     f: 0,    g: 0,   h: 10000 },
+  { month: '2026年6月',  c: 0,     d: 0,      e: 0,     f: 0,    g: 0,   h: 0   },
+];
+
+const months = rawData.map(r => r.month);
+const dataC  = rawData.map(r => r.c);
+const dataD  = rawData.map(r => r.d);
+const dataE  = rawData.map(r => r.e);
+const dataF  = rawData.map(r => r.f);
+const dataG  = rawData.map(r => r.g);
+const dataH  = rawData.map(r => r.h);
+
+function sumArr(arr) { return arr.reduce((a,b)=>a+b,0); }
+function fmtNum(n) {
+  if (n === 0) return '0';
+  if (n >= 100000) return (n/10000).toFixed(1) + '万';
+  if (n >= 10000)  return (n/10000).toFixed(2) + '万';
+  return n.toLocaleString();
+}
+function fmtFull(n) { return n === 0 ? '0' : n.toLocaleString(); }
+
+// 汇总卡片
+document.getElementById('sum-c').textContent = fmtNum(sumArr(dataC));
+document.getElementById('sum-d').textContent = fmtNum(sumArr(dataD));
+document.getElementById('sum-e').textContent = fmtNum(sumArr(dataE));
+document.getElementById('sum-f').textContent = fmtNum(sumArr(dataF));
+document.getElementById('sum-g').textContent = fmtNum(sumArr(dataG));
+document.getElementById('sum-h').textContent = fmtNum(sumArr(dataH));
+
+// 表格 body
+const tbody = document.getElementById('tableBody');
+rawData.forEach(row => {
+  const vals = [row.c, row.d, row.e, row.f, row.g, row.h];
+  const maxV = Math.max(...vals);
+  const tr = document.createElement('tr');
+  let tds = `<td>${row.month}</td>`;
+  vals.forEach(v => {
+    let cls = '';
+    if (v === 0) cls = 'td-zero';
+    else if (v === maxV && maxV > 1000) cls = 'td-high';
+    tds += `<td class="${cls}">${fmtFull(v)}</td>`;
+  });
+  tr.innerHTML = tds;
+  tbody.appendChild(tr);
+});
+
+// 合计行
+document.getElementById('ft-c').textContent = fmtFull(sumArr(dataC));
+document.getElementById('ft-d').textContent = fmtFull(sumArr(dataD));
+document.getElementById('ft-e').textContent = fmtFull(sumArr(dataE));
+document.getElementById('ft-f').textContent = fmtFull(sumArr(dataF));
+document.getElementById('ft-g').textContent = fmtFull(sumArr(dataG));
+document.getElementById('ft-h').textContent = fmtFull(sumArr(dataH));
+
+// ============ 折线图 ============
+const lineCtx = document.getElementById('lineChart').getContext('2d');
+new Chart(lineCtx, {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      {
+        label: '法律法规（4GB）',
+        data: dataC,
+        borderColor: '#4472C4',
+        backgroundColor: 'rgba(68,114,196,0.06)',
+        borderWidth: 2.5,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.2,
+        fill: false,
+      },
+      {
+        label: '裁判文书（11GB）',
+        data: dataD,
+        borderColor: '#ED7D31',
+        backgroundColor: 'rgba(237,125,49,0.06)',
+        borderWidth: 2.5,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.2,
+        fill: false,
+      },
+      {
+        label: '法律书籍（共375.5MB）',
+        data: dataE,
+        borderColor: '#7B68EE',
+        backgroundColor: 'rgba(123,104,238,0.06)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.2,
+        fill: false,
+      },
+      {
+        label: '合同模板（共204MB）',
+        data: dataF,
+        borderColor: '#26A65B',
+        backgroundColor: 'rgba(38,166,91,0.06)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.2,
+        fill: false,
+      },
+      {
+        label: '起诉状和答辩状（共12.4MB）',
+        data: dataG,
+        borderColor: '#FFC000',
+        backgroundColor: 'rgba(255,192,0,0.06)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.2,
+        fill: false,
+      },
+      {
+        label: '政务数据（共622MB）',
+        data: dataH,
+        borderColor: '#70AD47',
+        backgroundColor: 'rgba(112,173,71,0.06)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.2,
+        fill: false,
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          boxWidth: 20,
+          padding: 10,
+          font: { size: 11, family: "'Microsoft YaHei', 'PingFang SC', Arial" },
+          usePointStyle: true,
+          pointStyleWidth: 8,
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} 份`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(0,0,0,0.04)' },
+        ticks: {
+          font: { size: 10 },
+          maxRotation: 60,
+          autoSkip: false,
+        }
+      },
+      y: {
+        grid: { color: 'rgba(0,0,0,0.04)' },
+        ticks: {
+          font: { size: 10 },
+          callback: val => val >= 10000 ? (val/10000).toFixed(0)+'万' : val.toLocaleString()
+        },
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+// ============ 堆积柱状图 ============
+const barCtx = document.getElementById('barChart').getContext('2d');
+new Chart(barCtx, {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      {
+        label: '法律法规（4GB）',
+        data: dataC,
+        backgroundColor: 'rgba(68,114,196,0.85)',
+      },
+      {
+        label: '裁判文书（11GB）',
+        data: dataD,
+        backgroundColor: 'rgba(237,125,49,0.85)',
+      },
+      {
+        label: '法律书籍（共375.5MB）',
+        data: dataE,
+        backgroundColor: 'rgba(123,104,238,0.85)',
+      },
+      {
+        label: '合同模板（共204MB）',
+        data: dataF,
+        backgroundColor: 'rgba(38,166,91,0.85)',
+      },
+      {
+        label: '起诉状和答辩状（共12.4MB）',
+        data: dataG,
+        backgroundColor: 'rgba(255,192,0,0.85)',
+      },
+      {
+        label: '政务数据（共622MB）',
+        data: dataH,
+        backgroundColor: 'rgba(112,173,71,0.85)',
+      },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          boxWidth: 14,
+          padding: 10,
+          font: { size: 11, family: "'Microsoft YaHei', 'PingFang SC', Arial" },
+          usePointStyle: true,
+          pointStyleWidth: 8,
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} 份`
+        }
+      }
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: { color: 'rgba(0,0,0,0.04)' },
+        ticks: {
+          font: { size: 10 },
+          maxRotation: 60,
+          autoSkip: false,
+        }
+      },
+      y: {
+        stacked: true,
+        grid: { color: 'rgba(0,0,0,0.04)' },
+        ticks: {
+          font: { size: 10 },
+          callback: val => val >= 10000 ? (val/10000).toFixed(0)+'万' : val.toLocaleString()
+        },
+        beginAtZero: true
+      }
+    }
+  }
+});
+
+// ============ 下载功能 ============
+function downloadHTML() {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob(['<!DOCTYPE html>\n' + html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '法域智和数据情况总览.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
