@@ -4,7 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>法域智和数据情况总览</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- Chart.js 备用CDN -->
+<script>
+  if (typeof Chart === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>');
+  }
+</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -44,62 +50,72 @@
     margin-bottom: 14px;
   }
 
-  /* 版本选择器 */
+  /* ===== 版本选择器（独立区域，醒目） ===== */
   .version-bar {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
+    background: #f7f8fa;
+    border-bottom: 1px solid #e0e3e8;
+    padding: 12px 16px;
+    margin: 0;
   }
   .version-bar .ver-label {
-    font-size: 12px;
-    opacity: 0.7;
+    font-size: 13px;
+    color: #444;
+    font-weight: 600;
     white-space: nowrap;
   }
   .version-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 6px 14px;
-    border: 1.5px solid rgba(255,255,255,0.35);
-    border-radius: 20px;
-    background: transparent;
-    color: rgba(255,255,255,0.75);
-    font-size: 12px;
+    gap: 6px;
+    padding: 8px 18px;
+    border: 2px solid #d0d5dd;
+    border-radius: 24px;
+    background: #fff;
+    color: #555;
+    font-size: 13px;
     cursor: pointer;
     transition: all 0.25s;
     white-space: nowrap;
     font-family: inherit;
+    -webkit-tap-highlight-color: rgba(26,60,110,0.15);
+    user-select: none;
+    -webkit-user-select: none;
   }
-  .version-btn:hover {
-    border-color: rgba(255,255,255,0.7);
-    color: #fff;
-    background: rgba(255,255,255,0.1);
+  .version-btn:active {
+    transform: scale(0.96);
   }
   .version-btn.active {
-    background: rgba(255,255,255,0.22);
-    border-color: #fff;
+    background: #1a3c6e;
+    border-color: #1a3c6e;
     color: #fff;
-    font-weight: 600;
-    box-shadow: 0 0 8px rgba(255,255,255,0.2);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(26,60,110,0.3);
   }
   .version-btn .ver-badge {
-    font-size: 10px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 10px;
-    padding: 1px 7px;
-    line-height: 1.4;
+    font-size: 12px;
+    background: rgba(26,60,110,0.08);
+    border-radius: 12px;
+    padding: 2px 10px;
+    line-height: 1.5;
+    font-weight: 700;
   }
   .version-btn.active .ver-badge {
-    background: rgba(255,255,255,0.35);
+    background: rgba(255,255,255,0.2);
+    color: #fff;
   }
   .version-btn .ver-date {
-    font-size: 10px;
-    opacity: 0.65;
+    font-size: 11px;
+    opacity: 0.6;
+    font-weight: 400;
   }
   .version-btn.active .ver-date {
     opacity: 0.9;
+    color: rgba(255,255,255,0.85);
   }
 
   .content { padding: 20px 16px; }
@@ -280,17 +296,19 @@
   <div class="header">
     <h1 id="mainTitle">法域智和数据情况总览</h1>
     <div class="subtitle" id="mainSubtitle">统计口径：以 .docx 文档为单位（一份即一个 docx 文档）&nbsp;|&nbsp; 数据区间：2025年3月 — 2026年6月</div>
-    <div class="version-bar">
-      <span class="ver-label">📋 版本溯源：</span>
-      <button class="version-btn active" data-ver="v1.0" onclick="switchVersion('v1.0')">
-        <span class="ver-badge">v1.0</span>
-        <span class="ver-date">2026-06-03</span>
-      </button>
-      <button class="version-btn" data-ver="v0.9" onclick="switchVersion('v0.9')">
-        <span class="ver-badge">v0.9</span>
-        <span class="ver-date">2026-05-28</span>
-      </button>
-    </div>
+  </div>
+
+  <!-- 版本选择器 — 独立区域，微信WebView下也能正常显示 -->
+  <div class="version-bar" id="versionBar">
+    <span class="ver-label">📋 版本溯源：</span>
+    <button class="version-btn active" data-ver="v1.0" id="btnV10">
+      <span class="ver-badge">v1.0</span>
+      <span class="ver-date">2026-06-03</span>
+    </button>
+    <button class="version-btn" data-ver="v0.9" id="btnV09">
+      <span class="ver-badge">v0.9</span>
+      <span class="ver-date">2026-05-28</span>
+    </button>
   </div>
 
   <div class="content">
@@ -642,6 +660,7 @@ function renderAll(verKey) {
 // 版本切换
 // =============================================
 function switchVersion(verKey) {
+  if (!versions[verKey]) return;
   if (verKey === currentVersion) return;
   currentVersion = verKey;
 
@@ -670,9 +689,128 @@ function downloadHTML() {
 }
 
 // =============================================
-// 初始渲染
+// 降级渲染（Chart.js不可用时，至少渲染卡片和表格）
 // =============================================
-renderAll('v1.0');
+function renderCardsAndTable(verKey) {
+  var ver = versions[verKey];
+  var cols = ver.columns;
+  var data = ver.data;
+
+  var colData = {};
+  cols.forEach(function(col) { colData[col.key] = data.map(function(r) { return r[col.key]; }); });
+
+  // 汇总卡片
+  var cardsDiv = document.getElementById('summaryCards');
+  cardsDiv.innerHTML = '';
+  cols.forEach(function(col) {
+    var sum = sumArr(colData[col.key]);
+    var card = document.createElement('div');
+    card.className = 'card ' + col.cardClass;
+    card.innerHTML = '<div class="label">' + col.label + '</div><div class="value">' + fmtNum(sum) + '</div><div class="unit">份</div>';
+    cardsDiv.appendChild(card);
+  });
+
+  // 表格
+  var thead = document.getElementById('tableHead');
+  var headHtml = '<tr><th style="text-align:left;padding-left:12px;">月份</th>';
+  cols.forEach(function(col) { headHtml += '<th>' + col.shortLabel + '</th>'; });
+  headHtml += '</tr>';
+  thead.innerHTML = headHtml;
+
+  var tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  data.forEach(function(row) {
+    var vals = cols.map(function(col) { return row[col.key]; });
+    var tr = document.createElement('tr');
+    var tds = '<td>' + row.month + '</td>';
+    vals.forEach(function(v) {
+      var cls = v === 0 ? 'td-zero' : '';
+      tds += '<td class="' + cls + '">' + fmtFull(v) + '</td>';
+    });
+    tr.innerHTML = tds;
+    tbody.appendChild(tr);
+  });
+
+  var tfoot = document.getElementById('tableFoot');
+  var footHtml = '<tr><td>合计</td>';
+  cols.forEach(function(col) {
+    var sum = sumArr(colData[col.key]);
+    footHtml += '<td>' + fmtFull(sum) + '</td>';
+  });
+  footHtml += '</tr>';
+  tfoot.innerHTML = footHtml;
+
+  // 隐藏图表区域提示
+  var chartSections = document.querySelectorAll('.chart-section');
+  chartSections.forEach(function(section) {
+    var box = section.querySelector('.chart-box');
+    if (box) {
+      box.innerHTML = '<div style="text-align:center;padding:40px;color:#999;font-size:13px;">图表组件加载中，请刷新页面或使用电脑浏览器查看完整版</div>';
+    }
+  });
+}
+
+// =============================================
+// 初始化：绑定事件 + 渲染
+// =============================================
+function init() {
+  // 给版本按钮绑定事件（兼容微信WebView，不使用inline onclick）
+  document.querySelectorAll('.version-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      switchVersion(this.dataset.ver);
+    });
+    // 兼容移动端touch事件
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      switchVersion(this.dataset.ver);
+    });
+  });
+
+  // 初始渲染
+  renderAll('v1.0');
+}
+
+// 等待Chart.js加载完成后初始化
+if (typeof Chart !== 'undefined') {
+  init();
+} else {
+  // Chart.js CDN可能较慢，轮询等待
+  var chartCheckCount = 0;
+  var chartCheckInterval = setInterval(function() {
+    chartCheckCount++;
+    if (typeof Chart !== 'undefined') {
+      clearInterval(chartCheckInterval);
+      init();
+    } else if (chartCheckCount > 50) {
+      // 5秒超时，仍然渲染基本内容
+      clearInterval(chartCheckInterval);
+      console.warn('Chart.js 加载超时，图表功能可能不可用');
+      // 至少渲染表格和卡片
+      var ver = versions['v1.0'];
+      document.getElementById('mainTitle').textContent = ver.title;
+      document.getElementById('mainSubtitle').innerHTML = ver.subtitle;
+      document.getElementById('sourceNote').textContent = ver.source;
+      document.title = ver.title;
+      // 渲染汇总卡片和表格（不含图表）
+      renderCardsAndTable('v1.0');
+      // 版本切换降级为仅切换文本
+      document.querySelectorAll('.version-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var verKey = this.dataset.ver;
+          var v = versions[verKey];
+          document.getElementById('mainTitle').textContent = v.title;
+          document.getElementById('mainSubtitle').innerHTML = v.subtitle;
+          document.getElementById('sourceNote').textContent = v.source;
+          document.title = v.title;
+          document.querySelectorAll('.version-btn').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.ver === verKey);
+          });
+          renderCardsAndTable(verKey);
+        });
+      });
+    }
+  }, 100);
+}
 </script>
 </body>
 </html>
